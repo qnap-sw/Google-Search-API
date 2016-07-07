@@ -10,7 +10,7 @@ import shutil
 import os
 import threading
 import Queue
-
+import urllib2
 
 IMAGE_FORMATS = ["bmp", "gif", "jpg", "png", "psd", "pspimage", "thm",
                  "tif", "yuv", "ai", "drw", "eps", "ps", "svg", "tiff",
@@ -25,6 +25,7 @@ class ImageType:
     PHOTO = "photo"
     CLIPART = "clipart"
     LINE_DRAWING = "lineart"
+    ANIMATED = "animated"
 
 
 class SizeCategory:
@@ -59,6 +60,7 @@ class ColorType:
     NONE = None
     COLOR = "color"
     BLACK_WHITE = "gray"
+    TRANSPARENT = "trans"
     SPECIFIC = "specific"
 
 
@@ -68,6 +70,23 @@ class License:
     REUSE_WITH_MOD = "fmc"
     REUSE_NON_COMMERCIAL = "f"
     REUSE_WITH_MOD_NON_COMMERCIAL = "fm"
+
+class AspectRatio:
+    NONE = None
+    TALL = "t"
+    SQUARE = "s"
+    WIDE = "w"
+    PANORAMIC = "xw"
+
+class FileType:
+    NONE= None
+    JPG = "jpg"
+    GIF = "gif"
+    PNG = "png"
+    BMP = "bmp"
+    SVG = "svg"
+    WEBP = "webp"
+    ICO = "ico"
 
 
 class ImageOptions:
@@ -83,7 +102,8 @@ class ImageOptions:
         self.color_type = None
         self.color = None
         self.license = None
-
+        self.aspect_ratio = None
+        self.file_type = None
     def __repr__(self):
         return unidecode(self.__dict__)
 
@@ -111,6 +131,10 @@ class ImageOptions:
             tbs = self._add_to_tbs(tbs, "isc", self.color)
         if self.license:
             tbs = self._add_to_tbs(tbs, "sur", self.license)
+        if self.aspect_ratio:
+            tbs = self._add_to_tbs(tbs, "iar", self.aspect_ratio)
+        if self.file_type:
+            tbs = self._add_to_tbs(tbs, "ift", self.file_type) 
         return tbs
 
     def _add_to_tbs(self, tbs, name, value):
@@ -173,12 +197,18 @@ class ImageResult:
             # req = urllib2.Request(image)
             # req.add_header('Referer', referer)   # here is the trick
             # response = urllib2.urlopen(req)
-
+            print response.headers['content-type']
+            print self.file_name
             if "image" in response.headers['content-type']:
                 path_filename = self._get_path_filename(path)
-                with open(path_filename, 'wb') as output_file:
-                    shutil.copyfileobj(response.raw, output_file)
-                    # output_file.write(response.content)
+                #with open(path_filename, 'wb') as output_file:
+                    #shutil.copyfileobj(response.raw, output_file)
+                    #output_file.write(response.content)
+  		req = urllib2.Request(self.link, headers={'User-Agent' : "Mozilla/5.0"})
+ 		img = urllib2.urlopen(req)
+ 		localFile = open(path_filename,'wb')
+		localFile.write(img.read())
+		localFile.close()
             else:
                 print "\r\rskiped! cached image"
 
@@ -272,13 +302,14 @@ def _get_images_req_url(query, image_options=None, page=0,
     query = query.strip().replace(":", "%3A").replace(
         "+", "%2B").replace("&", "%26").replace(" ", "+")
 
-    url = "https://www.google.com.ar/search?q={}".format(query) + \
+    url = "https://www.google.com.tw/search?q={}".format(query) + \
           "&es_sm=122&source=lnms" + \
           "&tbm=isch&sa=X&ei=DDdUVL-fE4SpNq-ngPgK&ved=0CAgQ_AUoAQ" + \
           "&biw=1024&bih=719&dpr=1.25"
-
+    
     if image_options:
         tbs = image_options.get_tbs()
+	#print tbs
         if tbs:
             url = url + tbs
 
@@ -299,7 +330,6 @@ def _get_file_name(link):
 
     temp_name = link.rsplit('/', 1)[-1]
     image_format = _parse_image_format(link)
-
     if image_format and temp_name.rsplit(".", 1)[-1] != image_format:
         file_name = temp_name.rsplit(".", 1)[0] + "." + image_format
 
@@ -324,20 +354,23 @@ def _get_image_data(res, a):
         res: An ImageResult object.
         a: An "a" html tag.
     """
-    google_middle_link = a["href"]
-    url_parsed = urlparse.urlparse(google_middle_link)
-    qry_parsed = urlparse.parse_qs(url_parsed.query)
-    res.name = _get_name()
-    res.link = qry_parsed["imgurl"][0]
-    res.file_name = _get_file_name(res.link)
-    res.format = _parse_image_format(res.link)
-    res.width = qry_parsed["w"][0]
-    res.height = qry_parsed["h"][0]
-    res.site = qry_parsed["imgrefurl"][0]
-    res.domain = urlparse.urlparse(res.site).netloc
-    res.filesize = _get_filesize()
-
-
+    print a
+    try:
+    	google_middle_link = a["href"]
+    	url_parsed = urlparse.urlparse(google_middle_link)
+    	qry_parsed = urlparse.parse_qs(url_parsed.query)
+    	res.name = _get_name()
+    	res.link = qry_parsed["imgurl"][0]
+    	res.file_name = _get_file_name(res.link)
+    	res.format = _parse_image_format(res.link)
+    	res.width = qry_parsed["w"][0]
+    	res.height = qry_parsed["h"][0]
+    	res.site = qry_parsed["imgrefurl"][0]
+    	res.domain = urlparse.urlparse(res.site).netloc
+    	res.filesize = _get_filesize()
+    except KeyError:
+        #print a
+        pass
 def _get_thumb_data(res, img):
     """Parse thumb data and write it to an ImageResult object.
 
@@ -352,7 +385,7 @@ def _get_thumb_data(res, img):
 
     try:
         img_style = img[0]["style"].split(";")
-        img_style_dict = {i.split(":")[0]: i.split(":")[-1] for i in img_style}
+        img_style_dict = {i.split(":")[0]: i.split(":")[1] for i in img_style}
         res.thumb_width = img_style_dict["width"]
         res.thumb_height = img_style_dict["height"]
     except:
@@ -437,7 +470,7 @@ def search(query, image_options=None, num_images=50):
         html = browser.page_source
 
         if html:
-            soup = BeautifulSoup(html)
+            soup = BeautifulSoup(html,"lxml")
 
             # iterate over the divs containing images in one page
             divs = _find_divs_with_images(soup)
