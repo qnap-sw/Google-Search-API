@@ -197,21 +197,29 @@ class ImageResult:
             # req = urllib2.Request(image)
             # req.add_header('Referer', referer)   # here is the trick
             # response = urllib2.urlopen(req)
-            print response.headers['content-type']
-            print self.file_name
+            # print response.headers['content-type']
+            # print self.file_name
             if "image" in response.headers['content-type']:
                 path_filename = self._get_path_filename(path)
                 #with open(path_filename, 'wb') as output_file:
                     #shutil.copyfileobj(response.raw, output_file)
                     #output_file.write(response.content)
-  		req = urllib2.Request(self.link, headers={'User-Agent' : "Mozilla/5.0"})
- 		img = urllib2.urlopen(req)
- 		localFile = open(path_filename,'wb')
-		localFile.write(img.read())
-		localFile.close()
+                req = urllib2.Request(self.link)
+                req.add_header("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
+                img = urllib2.urlopen(req)
+                localFile = open(path_filename,'wb')
+                localFile.write(img.read())
+                localFile.close()
             else:
-                print "\r\rskiped! cached image"
-
+                #print "\r\rskiped! cached image"
+                print "\r\rcontent-type :application/octet-stream"
+                path_filename = self._get_path_filename(path)
+                req = urllib2.Request(self.link)
+                req.add_header("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
+                img = urllib2.urlopen(req)
+                localFile = open(path_filename,'wb')
+                localFile.write(img.read())
+                localFile.close()
             del response
 
         except Exception as inst:
@@ -309,7 +317,7 @@ def _get_images_req_url(query, image_options=None, page=0,
     
     if image_options:
         tbs = image_options.get_tbs()
-	#print tbs
+    # print tbs
         if tbs:
             url = url + tbs
 
@@ -354,22 +362,22 @@ def _get_image_data(res, a):
         res: An ImageResult object.
         a: An "a" html tag.
     """
-    print a
+    #print a
     try:
-    	google_middle_link = a["href"]
-    	url_parsed = urlparse.urlparse(google_middle_link)
-    	qry_parsed = urlparse.parse_qs(url_parsed.query)
-    	res.name = _get_name()
-    	res.link = qry_parsed["imgurl"][0]
-    	res.file_name = _get_file_name(res.link)
-    	res.format = _parse_image_format(res.link)
-    	res.width = qry_parsed["w"][0]
-    	res.height = qry_parsed["h"][0]
-    	res.site = qry_parsed["imgrefurl"][0]
-    	res.domain = urlparse.urlparse(res.site).netloc
-    	res.filesize = _get_filesize()
+        google_middle_link = a["href"]
+        url_parsed = urlparse.urlparse(google_middle_link)
+        qry_parsed = urlparse.parse_qs(url_parsed.query)
+        res.name = _get_name()
+        res.link = qry_parsed["imgurl"][0]
+        res.file_name = _get_file_name(res.link)
+        res.format = _parse_image_format(res.link)
+        res.width = qry_parsed["w"][0]
+        res.height = qry_parsed["h"][0]
+        res.site = qry_parsed["imgrefurl"][0]
+        res.domain = urlparse.urlparse(res.site).netloc
+        res.filesize = _get_filesize()
     except KeyError:
-        #print a
+        print a
         pass
 def _get_thumb_data(res, img):
     """Parse thumb data and write it to an ImageResult object.
@@ -470,7 +478,7 @@ def search(query, image_options=None, num_images=50):
         html = browser.page_source
 
         if html:
-            soup = BeautifulSoup(html,"lxml")
+            soup = BeautifulSoup(html)
 
             # iterate over the divs containing images in one page
             divs = _find_divs_with_images(soup)
@@ -489,6 +497,7 @@ def search(query, image_options=None, num_images=50):
 
                 # get url of image and its secondary data
                 a = div.find("a")
+                #print a
                 if a:
                     _get_image_data(res, a)
 
@@ -516,11 +525,13 @@ def search(query, image_options=None, num_images=50):
 
 def _download_image(image_result, path):
 
-    if image_result.format:
-        if path:
-            image_result.download(path)
-        else:
-            image_result.download()
+    # check image_result.format will filter some image url (http://.../../xx.jpg or xx.png but http://../../..)
+
+    #if image_result.format:
+    if path:
+        image_result.download(path)
+    else:
+        image_result.download()
 
 
 @measure_time
@@ -562,9 +573,9 @@ class ThreadUrl(threading.Thread):
             image_result = self.queue.get()
 
             counter = self.total - self.queue.qsize()
-            progress = "".join(["Downloading image ", str(counter),
-                                " (", str(self.total), ")"])
-            print progress
+            #progress = "".join(["Downloading image ", str(counter),
+            #                    " (", str(self.total), ")"])
+            #print progress
             sys.stdout.flush()
             _download_image(image_result, self.path)
 
