@@ -212,7 +212,7 @@ class ImageResult:
                 localFile.close()
             else:
                 #print "\r\rskiped! cached image"
-                print "\r\rcontent-type :application/octet-stream"
+                #print "\r\rcontent-type :application/octet-stream"
                 path_filename = self._get_path_filename(path)
                 req = urllib2.Request(self.link)
                 req.add_header("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
@@ -377,7 +377,7 @@ def _get_image_data(res, a):
         res.domain = urlparse.urlparse(res.site).netloc
         res.filesize = _get_filesize()
     except KeyError:
-        print a
+        #print a
         pass
 def _get_thumb_data(res, img):
     """Parse thumb data and write it to an ImageResult object.
