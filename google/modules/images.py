@@ -577,8 +577,8 @@ class ThreadUrl(threading.Thread):
             #                    " (", str(self.total), ")"])
             #print progress
             progress = (counter * 100) / self.total
-            print ("finish: %s percentage" % progress)
-            sys.stdout.flush()
+            print ("finish: %s %%" % progress)
+            #sys.stdout.flush()
             _download_image(image_result, self.path)
 
             # signals to queue job is done
