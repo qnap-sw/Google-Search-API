@@ -11,6 +11,7 @@ import os
 import threading
 import Queue
 import urllib2
+import time
 
 IMAGE_FORMATS = ["bmp", "gif", "jpg", "png", "psd", "pspimage", "thm",
                  "tif", "yuv", "ai", "drw", "eps", "ps", "svg", "tiff",
@@ -314,7 +315,6 @@ def _get_images_req_url(query, image_options=None, page=0,
           "&es_sm=122&source=lnms" + \
           "&tbm=isch&sa=X&ei=DDdUVL-fE4SpNq-ngPgK&ved=0CAgQ_AUoAQ" + \
           "&biw=1024&bih=719&dpr=1.25"
-    
     if image_options:
         tbs = image_options.get_tbs()
     # print tbs
@@ -328,7 +328,7 @@ def _find_divs_with_images(soup):
 
     try:
         div_container = soup.find("div", {"id": "rg_s"})
-        divs = div_container.find_all("div", {"class": "rg_di"})
+        divs = div_container.find_all("div", {"class": "rg_di rg_bx rg_el ivg-i"})
     except:
         divs = None
     return divs
@@ -466,23 +466,30 @@ def search(query, image_options=None, num_images=50):
     """
 
     results = set()
-    curr_num_img = 1
+    curr_num_img = 0
     page = 0
     browser = get_browser_with_url("")
-    while curr_num_img <= num_images:
+    while curr_num_img < num_images:
 
         page += 1
         url = _get_images_req_url(query, image_options, page)
         # html = get_html_from_dynamic_site(url)
         browser.get(url)
+        time.sleep(1)
+        for i in range(1, 10):
+            browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1)
         html = browser.page_source
 
         if html:
-            soup = BeautifulSoup(html, "html.parser")
 
+            soup = BeautifulSoup(html, "html.parser")
             # iterate over the divs containing images in one page
             divs = _find_divs_with_images(soup)
-
+            # number of results limit
+            search_length = len(divs)
+            if search_length < num_images:
+                num_images = search_length
             # empty search result page case
             if not divs:
                 break
@@ -493,11 +500,10 @@ def search(query, image_options=None, num_images=50):
 
                 # store indexing paramethers
                 res.page = page
-                res.index = curr_num_img
+                res.index = curr_num_img + 1
 
                 # get url of image and its secondary data
                 a = div.find("a")
-                #print a
                 if a:
                     _get_image_data(res, a)
 
@@ -510,10 +516,8 @@ def search(query, image_options=None, num_images=50):
                 prev_num_results = len(results)
                 results.add(res)
                 curr_num_results = len(results)
-
                 if curr_num_results > prev_num_results:
                     curr_num_img += 1
-
                 # break the loop when limit of images is reached
                 if curr_num_img >= num_images:
                     break
