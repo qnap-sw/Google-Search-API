@@ -206,19 +206,19 @@ class ImageResult:
                     #shutil.copyfileobj(response.raw, output_file)
                     #output_file.write(response.content)
                 req = urllib2.Request(self.link)
-                req.add_header("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
-                img = urllib2.urlopen(req)
-                localFile = open(path_filename,'wb')
+                req.add_header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
+                img = urllib2.urlopen(req, timeout=60)
+                localFile = open(path_filename, 'wb')
                 localFile.write(img.read())
                 localFile.close()
             else:
                 #print "\r\rskiped! cached image"
                 #print "\r\rcontent-type :application/octet-stream"
                 path_filename = self._get_path_filename(path)
-                req = urllib2.Request(self.link)
-                req.add_header("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
+                req = urllib2.Request(self.link, timeout=60)
+                req.add_header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
                 img = urllib2.urlopen(req)
-                localFile = open(path_filename,'wb')
+                localFile = open(path_filename, 'wb')
                 localFile.write(img.read())
                 localFile.close()
             del response
@@ -246,7 +246,7 @@ class ImageResult:
 
         # preserve the original name
         if self.file_name:
-            original_filename = self.file_name
+            original_filename = str(self.index).zfill(3) + "_" + self.file_name
             path_filename = os.path.join(path, original_filename)
 
         # create a default name if there is no original name
@@ -260,11 +260,11 @@ class ImageResult:
 
             # create root of file, until reaching a non existent one
             i = 1
-            default_filename = self.ROOT_FILENAME + str(i) + "." + file_format
+            default_filename = str(self.index).zfill(3) + "_" + self.ROOT_FILENAME + str(i) + "." + file_format
             path_filename = os.path.join(path, default_filename)
             while os.path.isfile(path_filename):
                 i += 1
-                default_filename = self.ROOT_FILENAME + str(i) + "." + \
+                default_filename = str(self.index).zfill(3) + "_" + self.ROOT_FILENAME + str(i) + "." + \
                     file_format
                 path_filename = os.path.join(path, default_filename)
 
@@ -476,7 +476,7 @@ def search(query, image_options=None, num_images=50):
         # html = get_html_from_dynamic_site(url)
         browser.get(url)
         time.sleep(1)
-        for i in range(1, 10):
+        for i in range(1, 15):
             browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
         html = browser.page_source
@@ -594,7 +594,7 @@ def fast_download(image_results, path=None, threads=10):
     # print path
     queue = Queue.Queue()
     total = len(image_results)
-
+    print total
     for image_result in image_results:
         queue.put(image_result)
 
