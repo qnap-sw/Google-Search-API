@@ -190,37 +190,31 @@ class ImageResult:
         # print path
 
         try:
-            response = requests.get(self.link, stream=True)
+            # response = requests.get(self.link, stream=True)
             # request a protected image (adding a referer to the request)
             # referer = self.domain
             # image = self.link
-
             # req = urllib2.Request(image)
             # req.add_header('Referer', referer)   # here is the trick
             # response = urllib2.urlopen(req)
-            # print response.headers['content-type']
-            # print self.file_name
-            if "image" in response.headers['content-type']:
-                path_filename = self._get_path_filename(path)
-                #with open(path_filename, 'wb') as output_file:
-                    #shutil.copyfileobj(response.raw, output_file)
-                    #output_file.write(response.content)
-                req = urllib2.Request(self.link)
-                req.add_header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
-                img = urllib2.urlopen(req, timeout=60)
-                localFile = open(path_filename, 'wb')
-                localFile.write(img.read())
-                localFile.close()
-            else:
+
+            req = urllib2.Request(self.link)
+            req.add_header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
+            response = urllib2.urlopen(req, timeout=20)
+            path_filename = self._get_path_filename(path)
+            localFile = open(path_filename, 'wb')
+            localFile.write(response.read())
+            localFile.close()
+            response.close()
+
+            # if "image" in response.headers['content-type']:
+            #     path_filename = self._get_path_filename(path)
+            #     with open(path_filename, 'wb') as output_file:
+            #         shutil.copyfileobj(response.raw, output_file)
+            #         output_file.write(response.content)
+            # else:
                 #print "\r\rskiped! cached image"
                 #print "\r\rcontent-type :application/octet-stream"
-                path_filename = self._get_path_filename(path)
-                req = urllib2.Request(self.link, timeout=60)
-                req.add_header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A")
-                img = urllib2.urlopen(req)
-                localFile = open(path_filename, 'wb')
-                localFile.write(img.read())
-                localFile.close()
             del response
 
         except Exception as inst:
@@ -479,6 +473,7 @@ def search(query, image_options=None, num_images=50):
         for i in range(1, 15):
             browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
+            browser.execute_script("if (document.getElementById('smb')){document.getElementById('smb').click()}")
         html = browser.page_source
 
         if html:
@@ -603,6 +598,5 @@ def fast_download(image_results, path=None, threads=10):
         t = ThreadUrl(queue, path, total)
         t.setDaemon(True)
         t.start()
-
     # wait on the queue until everything has been processed
     queue.join()
