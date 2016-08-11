@@ -6,7 +6,8 @@ import urllib2
 from functools import wraps
 # import requests
 from urllib import urlencode
-
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import subprocess
 
 def measure_time(fn):
 
@@ -66,8 +67,18 @@ def write_html_to_file(html, filename):
     of.close()
 
 
-def get_browser_with_url(url, timeout=120, driver="firefox"):
+def get_browser_with_url(url, timeout=120, driver="phantomjs"):
     """Returns an open browser with a given url."""
+
+    # set phantomjs user-agent
+    dcap = dict(DesiredCapabilities.PHANTOMJS)
+    dcap["phantomjs.page.settings.userAgent"] = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A"
+    )
+
+    # get phantomjs execute path
+    cmd_out = subprocess.check_output(["npm", "config", "get", "prefix"]).rstrip()
+    exe_path = cmd_out + "/lib/node_modules/phantomjs/bin/phantomjs"
 
     # choose a browser
     if driver == "firefox":
@@ -76,6 +87,8 @@ def get_browser_with_url(url, timeout=120, driver="firefox"):
         browser = webdriver.Ie()
     elif driver == "chrome":
         browser = webdriver.Chrome()
+    elif driver == "phantomjs":
+        browser = webdriver.PhantomJS(executable_path=exe_path, desired_capabilities=dcap)
     else:
         print "Driver choosen is not recognized"
 
@@ -84,7 +97,6 @@ def get_browser_with_url(url, timeout=120, driver="firefox"):
 
     # open a browser with given url
     browser.get(url)
-
     time.sleep(0.5)
 
     return browser
