@@ -462,20 +462,24 @@ def search(query, image_options=None, num_images=50):
     results = set()
     curr_num_img = 0
     page = 0
-    browser = get_browser_with_url("")
     while curr_num_img < num_images:
 
         page += 1
         url = _get_images_req_url(query, image_options, page)
         # html = get_html_from_dynamic_site(url)
+        browser = get_browser_with_url(url)
         browser.get(url)
         time.sleep(1)
-        for i in range(1, 15):
+        last_height = browser.execute_script("return document.body.scrollHeight")
+        while True:
             browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1)
+            time.sleep(3)
             browser.execute_script("if (document.getElementById('smb')){document.getElementById('smb').click()}")
+            new_height = browser.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
         html = browser.page_source
-
         if html:
 
             soup = BeautifulSoup(html, "html.parser")
@@ -503,9 +507,9 @@ def search(query, image_options=None, num_images=50):
                     _get_image_data(res, a)
 
                 # get url of thumb and its size paramethers
-                img = a.find_all("img")
-                if img:
-                    _get_thumb_data(res, img)
+                # img = a.find_all("img")
+                # if img:
+                #   _get_thumb_data(res, img)
 
                 # increment image counter only if a new image was added
                 prev_num_results = len(results)
