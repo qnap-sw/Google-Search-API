@@ -8,6 +8,7 @@ from functools import wraps
 from urllib import urlencode
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import subprocess
+import platform
 
 def measure_time(fn):
 
@@ -77,8 +78,13 @@ def get_browser_with_url(url, timeout=120, driver="phantomjs"):
     )
 
     # get phantomjs execute path
-    cmd_out = subprocess.check_output(["npm", "config", "get", "prefix"]).rstrip()
-    exe_path = cmd_out + "/lib/node_modules/phantomjs/bin/phantomjs"
+    cur_os = platform.system()
+    if cur_os == 'Windows':
+        cmd_out = subprocess.check_output(["npm", "config", "get", "prefix"], shell=True).rstrip()
+        exe_path = cmd_out + "\\node_modules\\phantomjs\\lib\phantom\\bin\\phantomjs"
+    else:
+        cmd_out = subprocess.check_output(["npm", "config", "get", "prefix"]).rstrip()
+        exe_path = cmd_out + "/lib/node_modules/phantomjs/bin/phantomjs"
 
     # choose a browser
     if driver == "firefox":
