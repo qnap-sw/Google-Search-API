@@ -12,6 +12,7 @@ import threading
 import Queue
 import urllib2
 import time
+import urllib
 
 IMAGE_FORMATS = ["bmp", "gif", "jpg", "png", "psd", "pspimage", "thm",
                  "tif", "yuv", "ai", "drw", "eps", "ps", "svg", "tiff",
@@ -240,8 +241,8 @@ class ImageResult:
 
         # preserve the original name
         if self.file_name:
-            original_filename = str(self.index).zfill(3) + "_" + self.file_name
-            path_filename = os.path.join(path, original_filename)
+            original_filename = str(self.index).zfill(3) + "_" + str(self.file_name)
+            path_filename = os.path.join(path, str(original_filename))
 
         # create a default name if there is no original name
         if not path_filename or os.path.isfile(path_filename):
@@ -302,13 +303,17 @@ def _parse_image_format(image_link):
 
 def _get_images_req_url(query, image_options=None, page=0,
                         per_page=20):
+    # process chinese character
+    query = urllib.quote(query)
     query = query.strip().replace(":", "%3A").replace(
         "+", "%2B").replace("&", "%26").replace(" ", "+")
-
+ 
     url = "https://www.google.com.tw/search?q={}".format(query) + \
           "&es_sm=122&source=lnms" + \
           "&tbm=isch&sa=X&ei=DDdUVL-fE4SpNq-ngPgK&ved=0CAgQ_AUoAQ" + \
           "&biw=1024&bih=719&dpr=1.25"
+    url = str(url)
+
     if image_options:
         tbs = image_options.get_tbs()
     # print tbs
